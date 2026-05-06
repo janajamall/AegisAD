@@ -1,0 +1,22 @@
+# Terraform plugin cache — never commit this
+.terraform/
+.terraform.lock.hcl
+
+# Terraform state files — contain sensitive data
+*.tfstate
+*.tfstate.backup
+
+# Terraform plan output
+*.tfplan
+
+# OS files
+.DS_Store
+Thumbs.db
+# reportlab and dependencies installed locally for Lambda packaging
+lambdas/report/reportlab/
+lambdas/report/PIL/
+lambdas/report/Pillow/
+lambdas/report/bin/
+lambdas/report/charset_normalizer/
+lambdas/report/*.dist-info/
+lambdas/report/*.dist-info

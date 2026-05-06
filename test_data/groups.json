@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "Properties": {
+        "name": "DOMAIN ADMINS@NORTH.SEVENKINGDOMS.LOCAL"
+      },
+      "Members": [
+        {"MemberType": "User", "MemberId": "abc"},
+        {"MemberType": "User", "MemberId": "def"},
+        {"MemberType": "User", "MemberId": "ghi"},
+        {"MemberType": "User", "MemberId": "jkl"},
+        {"MemberType": "User", "MemberId": "mno"}
+      ]
+    }
+  ]
+}

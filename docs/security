@@ -1,0 +1,63 @@
+# Security Analysis
+
+## Threat Model
+
+The GOAD-Cloud system has two distinct security concerns:
+
+1. **The lab is intentionally vulnerable.** The Windows Domain Controller and workstation are configured with deliberate misconfigurations for the security scanner to detect. They must never be reachable from the internet.
+
+2. **The cloud platform itself must be secure.** The dashboard, API, and data stores must be protected from misuse, tampering, and data leakage even though the underlying scan target is vulnerable by design.
+
+## Network Security
+
+The vulnerable AD lab lives entirely within a VPC. The Windows DC and workstation have no public IPs. The Linux scanner has a public IP only for SSM bootstrapping; its security group denies all inbound traffic.
+
+The dashboard is a static site on S3, served over HTTPS via the S3 endpoint. API Gateway terminates TLS for all API calls. No HTTP traffic is permitted anywhere.
+
+## Identity and Access Management
+
+Each component runs under its own IAM role:
+
+| Component | Permissions |
+|-----------|-------------|
+| Trigger Lambda | Write DynamoDB; call SSM SendCommand on the scanner instance ARN only |
+| Scanner EC2 | Read DynamoDB; write the raw S3 bucket only; CloudWatch logs |
+| Report Lambda | Read raw S3 bucket; write reports S3 bucket; update DynamoDB |
+| Status Lambda | Read DynamoDB only |
+| Download Lambda | Read reports S3 bucket; sts:GetCallerIdentity for presigned URL signing |
+
+No human users have console access to the AWS account beyond the project team. No long-lived access keys are issued.
+
+## Data Protection
+
+- All S3 buckets use SSE-S3 encryption at rest
+- DynamoDB uses AWS-managed encryption at rest
+- API Gateway and S3 enforce HTTPS in transit
+- Presigned URLs for PDF downloads expire after 15 minutes
+- Raw findings are deleted after 30 days via S3 lifecycle policy
+
+## Audit and Monitoring
+
+CloudTrail logs every management API call to a dedicated S3 bucket. CloudWatch collects Lambda execution logs and EC2 system logs. A CloudWatch alarm fires if more than five scans fail in any one-hour window.
+
+## Risk Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| AD credentials in source code | Credentials are read from EC2 environment variables, never committed to Git |
+| Scanner EC2 compromised | Has write-only access to one S3 prefix; cannot read other tenants or pivot to the AD lab beyond LDAP |
+| Public dashboard discoverable | The dashboard URL is shared only with authorized users; in production this would sit behind authentication |
+| Report PDFs leaked | Presigned URLs expire after 15 minutes; bucket is otherwise private |
+| AWS account billing abuse | CloudWatch billing alarm fires at $20 spend |
+
+## Known Limitations
+
+This is a student academic project, not production software. Several production-grade controls are deliberately out of scope:
+
+- No multi-factor authentication on the dashboard
+- No user accounts or per-user authorization
+- No rate limiting on the API
+- No customer-managed KMS keys (AWS-managed keys only)
+- No automated incident response
+
+These would all be added in a real deployment.

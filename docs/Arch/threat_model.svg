@@ -1,0 +1,144 @@
+<svg width="1050" height="680" viewBox="0 0 1050 680" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="tarr" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#c62828"/>
+    </marker>
+    <marker id="marr" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#2e7d32"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1050" height="680" fill="#f7f8fc"/>
+
+  <!-- Title -->
+  <text x="525" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#1a237e">AegisAD — Threat Model</text>
+  <text x="525" y="54" text-anchor="middle" font-size="12" fill="#78909c">STRIDE-based analysis  ·  Trust boundary diagram</text>
+
+  <!-- ── Trust Zones ── -->
+
+  <!-- Internet (untrusted) -->
+  <rect x="10" y="70" width="190" height="560" rx="10" fill="#ffebee" stroke="#c62828" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="105" y="92" text-anchor="middle" font-size="12" font-weight="bold" fill="#b71c1c">Internet</text>
+  <text x="105" y="108" text-anchor="middle" font-size="10" fill="#c62828">(Untrusted)</text>
+
+  <!-- AWS Public Layer -->
+  <rect x="215" y="70" width="240" height="560" rx="10" fill="#fff9c4" stroke="#f9a825" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="335" y="92" text-anchor="middle" font-size="12" font-weight="bold" fill="#e65100">AWS Public Layer</text>
+  <text x="335" y="108" text-anchor="middle" font-size="10" fill="#f57f17">API Gateway + S3 Dashboard</text>
+
+  <!-- AWS Private Layer -->
+  <rect x="470" y="70" width="260" height="560" rx="10" fill="#e8f5e9" stroke="#43a047" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="600" y="92" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">AWS Private Layer</text>
+  <text x="600" y="108" text-anchor="middle" font-size="10" fill="#388e3c">Lambda + EC2 + DynamoDB + S3</text>
+
+  <!-- AD Target Environment -->
+  <rect x="745" y="70" width="290" height="560" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="890" y="92" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">AD Target Environment</text>
+  <text x="890" y="108" text-anchor="middle" font-size="10" fill="#1565c0">Vulnerable lab (GOAD Lite)</text>
+
+  <!-- ── Assets (what we protect) ── -->
+
+  <!-- User in internet zone -->
+  <rect x="25" y="140" width="160" height="44" rx="7" fill="#ffcdd2" stroke="#e53935" stroke-width="1.5"/>
+  <text x="105" y="158" text-anchor="middle" font-size="12" font-weight="bold" fill="#b71c1c">Student User</text>
+  <text x="105" y="172" text-anchor="middle" font-size="9" fill="#c62828">Browser</text>
+
+  <!-- Attacker in internet zone -->
+  <rect x="25" y="310" width="160" height="44" rx="7" fill="#ef9a9a" stroke="#c62828" stroke-width="1.5"/>
+  <text x="105" y="328" text-anchor="middle" font-size="12" font-weight="bold" fill="#7f0000">Attacker</text>
+  <text x="105" y="342" text-anchor="middle" font-size="9" fill="#b71c1c">External threat actor</text>
+
+  <!-- API Gateway asset -->
+  <rect x="230" y="140" width="210" height="44" rx="7" fill="#fff176" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="335" y="158" text-anchor="middle" font-size="12" font-weight="bold" fill="#e65100">API Gateway</text>
+  <text x="335" y="172" text-anchor="middle" font-size="9" fill="#ef6c00">No authentication (open)</text>
+
+  <!-- S3 Dashboard asset -->
+  <rect x="230" y="240" width="210" height="44" rx="7" fill="#fff176" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="335" y="258" text-anchor="middle" font-size="12" font-weight="bold" fill="#e65100">S3 Dashboard</text>
+  <text x="335" y="272" text-anchor="middle" font-size="9" fill="#ef6c00">Public S3 static website</text>
+
+  <!-- Lambda functions -->
+  <rect x="485" y="140" width="230" height="44" rx="7" fill="#c8e6c9" stroke="#43a047" stroke-width="1.5"/>
+  <text x="600" y="158" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Lambda Functions x4</text>
+  <text x="600" y="172" text-anchor="middle" font-size="9" fill="#2e7d32">IAM role-restricted</text>
+
+  <!-- DynamoDB -->
+  <rect x="485" y="240" width="230" height="44" rx="7" fill="#c8e6c9" stroke="#43a047" stroke-width="1.5"/>
+  <text x="600" y="258" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">DynamoDB</text>
+  <text x="600" y="272" text-anchor="middle" font-size="9" fill="#2e7d32">Encrypted at rest (AES-256)</text>
+
+  <!-- Scanner EC2 -->
+  <rect x="485" y="340" width="230" height="44" rx="7" fill="#c8e6c9" stroke="#43a047" stroke-width="1.5"/>
+  <text x="600" y="358" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Scanner EC2</text>
+  <text x="600" y="372" text-anchor="middle" font-size="9" fill="#2e7d32">SSM access only, credentials.env</text>
+
+  <!-- S3 buckets -->
+  <rect x="485" y="440" width="230" height="44" rx="7" fill="#c8e6c9" stroke="#43a047" stroke-width="1.5"/>
+  <text x="600" y="458" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">S3 Raw + Reports</text>
+  <text x="600" y="472" text-anchor="middle" font-size="9" fill="#2e7d32">Private + encrypted, presigned URLs</text>
+
+  <!-- AD DC -->
+  <rect x="760" y="200" width="260" height="44" rx="7" fill="#bbdefb" stroke="#1565c0" stroke-width="1.5"/>
+  <text x="890" y="218" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">Domain Controller (DC01)</text>
+  <text x="890" y="232" text-anchor="middle" font-size="9" fill="#1565c0">north.sevenkingdoms.local</text>
+
+  <!-- AD credentials note -->
+  <rect x="760" y="310" width="260" height="44" rx="7" fill="#bbdefb" stroke="#1565c0" stroke-width="1.5"/>
+  <text x="890" y="328" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">AD Credentials</text>
+  <text x="890" y="342" text-anchor="middle" font-size="9" fill="#1565c0">Stored in credentials.env (600)</text>
+
+  <!-- ── Threat Boxes ── -->
+
+  <!-- T1: Unauthorized scan -->
+  <rect x="220" y="425" width="220" height="58" rx="6" fill="#ffccbc" stroke="#bf360c" stroke-width="1.5"/>
+  <text x="330" y="444" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">T1: Unauthorized Scan</text>
+  <text x="330" y="460" text-anchor="middle" font-size="9" fill="#6d4c41">Anyone can POST /scan</text>
+  <text x="330" y="474" text-anchor="middle" font-size="9" fill="#4caf50">Mitigation: IP allowlist or API key</text>
+
+  <!-- T2: S3 data exposure -->
+  <rect x="220" y="500" width="220" height="58" rx="6" fill="#ffccbc" stroke="#bf360c" stroke-width="1.5"/>
+  <text x="330" y="519" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">T2: S3 Data Exposure</text>
+  <text x="330" y="535" text-anchor="middle" font-size="9" fill="#6d4c41">Reports/findings accessible</text>
+  <text x="330" y="549" text-anchor="middle" font-size="9" fill="#4caf50">Mitigation: private bucket + presigned</text>
+
+  <!-- T3: EC2 compromise -->
+  <rect x="475" y="530" width="240" height="58" rx="6" fill="#ffccbc" stroke="#bf360c" stroke-width="1.5"/>
+  <text x="595" y="549" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">T3: EC2 Compromise</text>
+  <text x="595" y="565" text-anchor="middle" font-size="9" fill="#6d4c41">Attacker pivots via scanner IAM role</text>
+  <text x="595" y="579" text-anchor="middle" font-size="9" fill="#4caf50">Mitigation: scoped IAM, no SSH keys</text>
+
+  <!-- T4: Credential theft -->
+  <rect x="745" y="420" width="270" height="58" rx="6" fill="#ffccbc" stroke="#bf360c" stroke-width="1.5"/>
+  <text x="880" y="439" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">T4: AD Credential Exposure</text>
+  <text x="880" y="455" text-anchor="middle" font-size="9" fill="#6d4c41">credentials.env on EC2 disk</text>
+  <text x="880" y="469" text-anchor="middle" font-size="9" fill="#4caf50">Mitigation: chmod 600, no git commit</text>
+
+  <!-- T5: DynamoDB tampering -->
+  <rect x="745" y="495" width="270" height="58" rx="6" fill="#ffccbc" stroke="#bf360c" stroke-width="1.5"/>
+  <text x="880" y="514" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">T5: Status Manipulation</text>
+  <text x="880" y="530" text-anchor="middle" font-size="9" fill="#6d4c41">Forging scan results in DynamoDB</text>
+  <text x="880" y="544" text-anchor="middle" font-size="9" fill="#4caf50">Mitigation: IAM write-only from Lambda</text>
+
+  <!-- ── Trust boundary crossing arrows ── -->
+  <line x1="185" y1="162" x2="215" y2="162" stroke="#c62828" stroke-width="2" marker-end="url(#tarr)"/>
+  <line x1="455" y1="162" x2="480" y2="162" stroke="#c62828" stroke-width="2" marker-end="url(#tarr)"/>
+  <line x1="715" y1="360" x2="745" y2="220" stroke="#c62828" stroke-width="2" marker-end="url(#tarr)" stroke-dasharray="6,3"/>
+
+  <!-- Legend -->
+  <rect x="10" y="610" width="730" height="56" rx="8" fill="white" stroke="#cfd8dc" stroke-width="1"/>
+  <text x="375" y="628" text-anchor="middle" font-size="11" font-weight="bold" fill="#37474f">Legend</text>
+  <rect x="25" y="636" width="14" height="14" rx="2" fill="#ffcdd2" stroke="#c62828" stroke-width="1"/>
+  <text x="45" y="648" font-size="10" fill="#37474f">Untrusted zone</text>
+  <rect x="145" y="636" width="14" height="14" rx="2" fill="#fff9c4" stroke="#f9a825" stroke-width="1"/>
+  <text x="165" y="648" font-size="10" fill="#37474f">Public AWS layer</text>
+  <rect x="280" y="636" width="14" height="14" rx="2" fill="#e8f5e9" stroke="#43a047" stroke-width="1"/>
+  <text x="300" y="648" font-size="10" fill="#37474f">Private AWS layer</text>
+  <rect x="415" y="636" width="14" height="14" rx="2" fill="#e3f2fd" stroke="#1565c0" stroke-width="1"/>
+  <text x="435" y="648" font-size="10" fill="#37474f">AD target environment</text>
+  <rect x="570" y="636" width="14" height="14" rx="2" fill="#ffccbc" stroke="#bf360c" stroke-width="1"/>
+  <text x="590" y="648" font-size="10" fill="#37474f">Identified threat + mitigation</text>
+  <line x1="730" y1="643" x2="750" y2="643" stroke="#c62828" stroke-width="1.5" marker-end="url(#tarr)" stroke-dasharray="4,2"/>
+  <text x="757" y="648" font-size="10" fill="#37474f">Trust boundary crossing</text>
+</svg>

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AegisAD | Active Directory Security Scanner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #7c8cff;
+      letter-spacing: -0.5px;
+    }
+
+    header .subtitle {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    /* ── Main layout ── */
+    main {
+      flex: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+    }
+
+    .page-desc {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #7c8cff;
+      margin-bottom: 16px;
+    }
+
+    /* ── Scan button ── */
+    #scanBtn {
+      background: #7c8cff;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #scanBtn:hover:not(:disabled) {
+      background: #6574f0;
+      transform: translateY(-1px);
+    }
+
+    #scanBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── Status area ── */
+    #statusArea { display: none; }
+
+    .run-id-display {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 20px;
+      font-family: monospace;
+    }
+
+    /* ── Progress bar ── */
+    .progress-track {
+      background: #0f1117;
+      border-radius: 99px;
+      height: 6px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: #7c8cff;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    .progress-fill.complete { background: #22c55e; }
+    .progress-fill.failed { background: #ef4444; }
+
+    /* ── Status badge ── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .status-badge.pending {
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    .status-badge.running {
+      background: #1e3a5f;
+      color: #60a5fa;
+    }
+
+    .status-badge.processing {
+      background: #1e3a5f;
+      color: #60a5fa;
+    }
+
+    .status-badge.completed {
+      background: #14532d;
+      color: #22c55e;
+    }
+
+    .status-badge.failed {
+      background: #450a0a;
+      color: #ef4444;
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Download button ── */
+    #downloadBtn {
+      display: none;
+      background: #22c55e;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      margin-top: 16px;
+    }
+
+    #downloadBtn:hover {
+      background: #16a34a;
+      transform: translateY(-1px);
+    }
+
+    /* ── History ── */
+    #historyArea { display: none; }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #2d3148;
+      font-size: 13px;
+    }
+
+    .history-item:last-child { border-bottom: none; }
+
+    .history-run-id {
+      font-family: monospace;
+      color: #94a3b8;
+    }
+
+    .history-time { color: #64748b; }
+
+    .history-download {
+      color: #7c8cff;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* ── Log area ── */
+    #logArea {
+      background: #0f1117;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #64748b;
+      max-height: 160px;
+      overflow-y: auto;
+      margin-top: 16px;
+    }
+
+    .log-line { margin-bottom: 4px; }
+    .log-line.info { color: #94a3b8; }
+    .log-line.success { color: #22c55e; }
+    .log-line.error { color: #ef4444; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #334155;
+      border-top: 1px solid #1a1d27;
+    }
+  </style>
+</head>
+<body dir="ltr">
+
+<header>
+  <div class="logo">⚡ AegisAD</div>
+  <div class="subtitle">Active Directory Security Scanner</div>
+</header>
+
+<main>
+  <h1>Security Assessment</h1>
+  <p class="page-desc">
+    Scan a target Active Directory environment for misconfigurations,
+    attack paths, and privilege escalation opportunities.
+  </p>
+
+  <!-- ── Scan card ── -->
+  <div class="card">
+    <div class="card-title">New Scan</div>
+    <button id="scanBtn" onclick="startScan()">
+      <span>▶</span> Start Scan
+    </button>
+  </div>
+
+  <!-- ── Status card ── -->
+  <div class="card" id="statusArea">
+    <div class="card-title">Scan Progress</div>
+    <div class="run-id-display" id="runIdDisplay"></div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div id="statusBadge" class="status-badge pending">
+      <span>◉</span>
+      <span id="statusText">Waiting...</span>
+    </div>
+
+    <button id="downloadBtn" onclick="downloadReport()">
+      ⬇ Download Report
+    </button>
+
+    <div id="logArea"></div>
+  </div>
+
+  <!-- ── History card ── -->
+  <div class="card" id="historyArea">
+    <div class="card-title">Recent Scans</div>
+    <div id="historyList"></div>
+  </div>
+
+</main>
+
+<footer>
+  AegisAD · Academic Security Assessment Platform · Not for production use
+</footer>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────
+  // After `terraform apply` in AegisAD, run: terraform output api_url
+  // Paste the result here (no trailing slash)
+  const API_URL = 'https://6z60dhrfod.execute-api.us-east-1.amazonaws.com';
+
+  // ── State ───────────────────────────────────────────────
+  let currentRunId = null;
+  let pollInterval = null;
+  let pollFailures = 0;          // consecutive poll failures
+  const MAX_POLL_FAILURES = 5;   // stop polling after this many in a row
+  let scanHistory = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+
+  // ── Logging ─────────────────────────────────────────────
+  function addLog(message, type = 'info') {
+    const logArea = document.getElementById('logArea');
+    const line = document.createElement('div');
+    line.className = `log-line ${type}`;
+    const time = new Date().toLocaleTimeString();
+    line.textContent = `[${time}] ${message}`;
+    logArea.appendChild(line);
+    logArea.scrollTop = logArea.scrollHeight;
+  }
+
+  // ── Progress mapping ────────────────────────────────────
+  function getProgress(status) {
+    const map = {
+      'PENDING':    10,
+      'RUNNING':    40,
+      'PROCESSING': 75,
+      'COMPLETED':  100,
+      'FAILED':     100
+    };
+    return map[status] || 0;
+  }
+
+  // ── Update UI for current status ────────────────────────
+  function updateStatusUI(status) {
+    const badge = document.getElementById('statusBadge');
+    const text = document.getElementById('statusText');
+    const fill = document.getElementById('progressFill');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // Update progress bar
+    fill.style.width = getProgress(status) + '%';
+
+    // Reset classes
+    badge.className = 'status-badge ' + status.toLowerCase();
+    fill.className = 'progress-fill';
+
+    switch (status) {
+      case 'PENDING':
+        badge.innerHTML = '<div class="spinner"></div><span>Pending — waiting for scanner</span>';
+        break;
+      case 'RUNNING':
+        badge.innerHTML = '<div class="spinner"></div><span>Running — BloodHound scanning AD</span>';
+        break;
+      case 'PROCESSING':
+        badge.innerHTML = '<div class="spinner"></div><span>Processing — generating PDF report</span>';
+        break;
+      case 'COMPLETED':
+        badge.innerHTML = '<span>✓</span><span>Completed — report ready</span>';
+        fill.classList.add('complete');
+        downloadBtn.style.display = 'inline-block';
+        stopPolling();
+        addLog('Scan completed. Report is ready to download.', 'success');
+        break;
+      case 'FAILED':
+        badge.innerHTML = '<span>✗</span><span>Failed — check logs</span>';
+        fill.classList.add('failed');
+        stopPolling();
+        addLog('Scan failed. Check CloudWatch logs for details.', 'error');
+        break;
+      default:
+        badge.innerHTML = `<span>◉</span><span>${status}</span>`;
+    }
+  }
+
+  // ── Start scan ──────────────────────────────────────────
+  async function startScan() {
+    const btn = document.getElementById('scanBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Starting...';
+
+    // Clear previous log and reset failure counter
+    document.getElementById('logArea').innerHTML = '';
+    document.getElementById('downloadBtn').style.display = 'none';
+    pollFailures = 0;
+
+    addLog('Sending scan request to API...');
+
+    try {
+      const response = await fetch(`${API_URL}/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      currentRunId = data.run_id;
+
+      addLog(`Scan started. Run ID: ${currentRunId}`, 'success');
+
+      // Show status area
+      document.getElementById('statusArea').style.display = 'block';
+      document.getElementById('runIdDisplay').textContent =
+        `Run ID: ${currentRunId}`;
+
+      // Save to history
+      scanHistory.unshift({
+        run_id: currentRunId,
+        started_at: new Date().toISOString()
+      });
+      localStorage.setItem('scanHistory', JSON.stringify(scanHistory.slice(0, 10)));
+      renderHistory();
+
+      // Start polling
+      updateStatusUI('PENDING');
+      startPolling();
+
+    } catch (err) {
+      addLog(`Error: ${err.message}`, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<span>▶</span> Start Scan';
+    }
+  }
+
+  // ── Poll status ─────────────────────────────────────────
+  function startPolling() {
+    pollInterval = setInterval(pollStatus, 3000);
+  }
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+    // Re-enable scan button
+    const btn = document.getElementById('scanBtn');
+    btn.disabled = false;
+    btn.innerHTML = '<span>▶</span> Start Scan';
+  }
+
+  async function pollStatus() {
+    if (!currentRunId) return;
+
+    try {
+      const response = await fetch(`${API_URL}/status/${currentRunId}`);
+      if (!response.ok) {
+        pollFailures++;
+        addLog(`Status check failed (HTTP ${response.status}) — attempt ${pollFailures}/${MAX_POLL_FAILURES}`, 'error');
+        if (pollFailures >= MAX_POLL_FAILURES) {
+          stopPolling();
+          addLog('Polling stopped after repeated failures. Refresh to retry.', 'error');
+        }
+        return;
+      }
+
+      pollFailures = 0; // reset on success
+      const data = await response.json();
+      updateStatusUI(data.status);
+      addLog(`Status: ${data.status}`);
+
+    } catch (err) {
+      pollFailures++;
+      addLog(`Polling error: ${err.message} (${pollFailures}/${MAX_POLL_FAILURES})`, 'error');
+      if (pollFailures >= MAX_POLL_FAILURES) {
+        stopPolling();
+        addLog('Polling stopped — API unreachable. Check your connection.', 'error');
+      }
+    }
+  }
+
+  // ── Download report ─────────────────────────────────────
+  async function downloadReport() {
+    if (!currentRunId) return;
+
+    addLog('Requesting download link...');
+
+    try {
+      const response = await fetch(`${API_URL}/download/${currentRunId}`);
+      if (!response.ok) throw new Error(`API returned ${response.status}`);
+
+      const data = await response.json();
+
+      // Open the presigned URL in a new tab
+      // Browser downloads the PDF automatically
+      window.open(data.download_url, '_blank');
+
+      addLog('Download started. Check your downloads folder.', 'success');
+
+    } catch (err) {
+      addLog(`Download error: ${err.message}`, 'error');
+    }
+  }
+
+  // ── History ─────────────────────────────────────────────
+  function renderHistory() {
+    if (scanHistory.length === 0) return;
+
+    document.getElementById('historyArea').style.display = 'block';
+    const list = document.getElementById('historyList');
+    list.innerHTML = '';
+
+    scanHistory.forEach(scan => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      const time = new Date(scan.started_at).toLocaleString();
+      item.innerHTML = `
+        <span class="history-run-id">${scan.run_id.substring(0, 8)}...</span>
+        <span class="history-time">${time}</span>
+        <a class="history-download"
+           onclick="redownload('${scan.run_id}')">
+          Download
+        </a>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  async function redownload(runId) {
+    currentRunId = runId;
+    await downloadReport();
+  }
+
+  // ── Init ─────────────────────────────────────────────────
+  renderHistory();
+</script>
+
+</body>
+</html>

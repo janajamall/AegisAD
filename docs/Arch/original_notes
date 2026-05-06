@@ -1,0 +1,158 @@
+# GOAD-Cloud Architecture
+
+## Overview
+
+GOAD-Cloud is a serverless platform that runs automated security assessments against an Active Directory environment hosted on AWS. Users initiate scans via a web dashboard; results are delivered as PDF reports identifying attack paths and misconfigurations.
+
+The system uses a stateless, event-driven architecture: each component does one job and communicates with others through AWS-managed services (S3, DynamoDB, SSM). No long-running servers process scan requests — scans execute on demand and shut down when idle.
+
+## Component Diagram
+Browser
+|
+v
+API Gateway -- POST /scan ----> Trigger Lambda
+|
+v
+SSM Run Command
+|
+v
+[Linux Scanner EC2] ---LDAP---> [Windows DC EC2]
+|                              ^
+|                              |
+v                       (workstation joined)
+S3 raw bucket                      |
+|                       [Windows Workstation EC2]
+v
+S3 ObjectCreated event
+|
+v
+Report Lambda
+|
+v
+S3 reports bucket
+|
+v
+Browser <-- presigned URL <-- Download Lambda <-- API Gateway
+DynamoDB tracks status across all stages.
+CloudWatch collects logs from all Lambdas and the scanner.
+CloudTrail audits all API calls.
+
+## Components
+
+### Dashboard
+
+Single-page HTML/JS application hosted on S3 with static website hosting enabled. Provides three actions: start scan, poll status, download report. Polls the status endpoint every three seconds while a scan is in progress.
+
+### API Gateway
+
+HTTP API exposing three routes:
+- `POST /scan` — initiates a new scan, returns `run_id`
+- `GET /status/{run_id}` — returns current scan status
+- `GET /download/{run_id}` — returns presigned S3 URL for the PDF
+
+CORS is enabled to allow the dashboard's JavaScript to call the API across domains.
+
+### Trigger Lambda
+
+Receives the API Gateway event, generates a UUID for the run, writes a `PENDING` record to DynamoDB, and invokes the scanner via SSM Run Command. Returns the `run_id` to the caller within one second so the browser does not time out waiting for the scan itself to finish.
+
+### Scanner EC2
+
+A Linux instance (Ubuntu 22.04, t3.micro) with `bloodhound-python` pre-installed. Sits in the same VPC as the Windows targets so it can reach them over LDAP on port 389. Receives commands from Lambda via SSM Agent — no SSH access is required. The scanner:
+
+1. Updates DynamoDB status to `RUNNING`
+2. Executes `bloodhound-python` against the Windows DC
+3. Zips the resulting JSON files
+4. Uploads the zip to the raw S3 bucket
+5. Logs all output to CloudWatch
+
+### Windows Domain Controller EC2
+
+A Windows Server 2019 instance promoted to a Domain Controller for the `north.sevenkingdoms.local` domain. Configured with deliberate misconfigurations following the GOAD MINILAB specification:
+- Kerberoastable accounts (Service Principal Names set on regular users)
+- Passwords stored in description fields
+- ACL chains allowing privilege escalation to Domain Admins
+- Unconstrained delegation on workstation accounts
+
+### Windows Workstation EC2
+
+A Windows Server 2019 instance joined to the domain. Provides session enumeration data — when domain users log in, BloodHound can correlate their access with attack paths through the workstation.
+
+### S3 Raw Bucket
+
+Stores raw scan output as `s3://goad-raw/{run_id}/findings.zip`. Server-side encryption enabled. Object lifecycle deletes objects older than 30 days.
+
+### Report Lambda
+
+Triggered automatically by the S3 ObjectCreated event when a new findings zip is uploaded. Reads the JSON, applies the security scoring logic (counts attack paths to Domain Admins, identifies Kerberoastable accounts and weak ACLs), generates a PDF using `reportlab`, and uploads to the reports bucket.
+
+### S3 Reports Bucket
+
+Stores generated PDF reports. Access is via presigned URLs only; the bucket is otherwise private.
+
+### Status Lambda
+
+Reads the current status from DynamoDB. Called repeatedly by the dashboard while a scan is in progress.
+
+### Download Lambda
+
+Generates a presigned S3 URL valid for 15 minutes, allowing the browser to download the PDF directly from S3 without exposing bucket credentials.
+
+### DynamoDB
+
+Single table `goad-scan-runs`, partition key `run_id`. Stores scan state across the four lifecycle states: `PENDING` → `RUNNING` → `COMPLETED` or `FAILED`. Pay-per-request billing keeps cost at zero for project-scale usage.
+
+### CloudWatch
+
+Collects logs from all Lambdas (automatic) and from the scanner EC2 via the CloudWatch Agent. A dashboard tracks Lambda invocation count, error rate, and scan duration.
+
+### CloudTrail
+
+Logs all AWS API calls to a dedicated S3 bucket. Provides an audit trail of every scan trigger and report download for the security analysis section.
+
+### IAM
+
+Each Lambda and EC2 instance has its own role with least-privilege scoping. The Trigger Lambda can invoke SSM only on the scanner's specific instance ARN. The scanner can write only to the raw bucket. The Report Lambda can read the raw bucket and write the reports bucket but cannot delete from either.
+
+## Data Flow
+
+A typical scan completes in 30 to 90 seconds end to end:
+
+1. User clicks "Start Scan" — browser sends `POST /scan` to API Gateway (under one second)
+2. Trigger Lambda creates `run_id`, writes PENDING to DynamoDB, sends SSM command, returns `run_id`
+3. Browser begins polling `GET /status/{run_id}` every three seconds
+4. SSM Agent on scanner EC2 receives the command (one to five seconds)
+5. Scanner runs `bloodhound-python` against the DC (twenty to sixty seconds depending on lab size)
+6. Scanner uploads `findings.zip` to S3 raw bucket
+7. S3 fires ObjectCreated event, invoking the Report Lambda
+8. Report Lambda generates the PDF (five to ten seconds), uploads to reports bucket, marks COMPLETED in DynamoDB
+9. Browser sees COMPLETED status on next poll, calls `GET /download/{run_id}`
+10. Download Lambda returns presigned URL, browser downloads the PDF
+
+## AWS Services Used
+
+| Service | Purpose |
+|---------|---------|
+| EC2 | Hosts the Windows AD lab and the Linux scanner |
+| Lambda | Serverless compute for trigger, report, status, download |
+| S3 | Raw findings, PDF reports, dashboard hosting, CloudTrail logs |
+| DynamoDB | Scan run state |
+| API Gateway | Public HTTP endpoints for the dashboard |
+| Systems Manager | Remote command execution on the scanner EC2 |
+| IAM | Identity and access control |
+| CloudWatch | Logs, metrics, monitoring dashboard |
+| CloudTrail | Audit logging |
+| VPC | Network isolation between AWS components |
+
+This satisfies the assignment's "three or more cloud services" requirement; ten services are used in total, each with a distinct role.
+
+## Security Design
+
+See `docs/SECURITY.md` for full details. Key principles:
+
+- **Network isolation:** The Windows AD lab is deliberately vulnerable; it must never be exposed to the internet. All Windows EC2s sit in the VPC with security groups restricting inbound traffic.
+- **Least privilege IAM:** Every component has its own role with the minimum permissions needed.
+- **No shared credentials:** SSM Run Command replaces SSH; no key pairs are stored anywhere.
+- **Encryption at rest:** All S3 buckets and DynamoDB tables use AWS-managed encryption.
+- **Audit logging:** CloudTrail captures every administrative action.
+- **Time-limited access:** Report download URLs expire after 15 minutes.

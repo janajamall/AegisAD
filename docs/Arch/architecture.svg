@@ -1,0 +1,192 @@
+<svg width="1100" height="720" viewBox="0 0 1100 720" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#546e7a"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#1565c0"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#7b1fa2"/>
+    </marker>
+    <marker id="arr-green" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#2e7d32"/>
+    </marker>
+    <marker id="arr-orange" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#e65100"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="720" fill="#f7f8fc"/>
+
+  <!-- Title -->
+  <text x="550" y="36" text-anchor="middle" font-size="20" font-weight="bold" fill="#1a237e">AegisAD — System Architecture</text>
+  <text x="550" y="56" text-anchor="middle" font-size="12" fill="#78909c">AWS us-east-1  ·  VPC 10.0.0.0/16  ·  Serverless + IaC (Terraform)</text>
+
+  <!-- User zone -->
+  <rect x="8" y="70" width="150" height="590" rx="10" fill="#e8eaf6" stroke="#7986cb" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="83" y="90" text-anchor="middle" font-size="11" font-weight="bold" fill="#3949ab">User</text>
+
+  <!-- AWS Cloud zone -->
+  <rect x="168" y="70" width="916" height="590" rx="12" fill="#fffde7" stroke="#ff9800" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="188" y="90" font-size="11" font-weight="bold" fill="#e65100">AWS Cloud</text>
+
+  <!-- Lambda sub-zone -->
+  <rect x="360" y="195" width="310" height="255" rx="8" fill="#f3e5f5" stroke="#9c27b0" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="374" y="212" font-size="10" fill="#6a1b9a">Lambda Functions (Serverless)</text>
+
+  <!-- Storage sub-zone -->
+  <rect x="730" y="195" width="340" height="395" rx="8" fill="#e8f5e9" stroke="#43a047" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="745" y="212" font-size="10" fill="#1b5e20">Storage and State</text>
+
+  <!-- ── Components ── -->
+
+  <!-- Browser -->
+  <rect x="18" y="110" width="128" height="52" rx="7" fill="#c5cae9" stroke="#5c6bc0" stroke-width="1.5"/>
+  <text x="82" y="133" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a237e">Browser</text>
+  <text x="82" y="150" text-anchor="middle" font-size="10" fill="#3949ab">Student / User</text>
+
+  <!-- S3 Dashboard -->
+  <rect x="18" y="230" width="128" height="52" rx="7" fill="#fff3e0" stroke="#f57c00" stroke-width="1.5"/>
+  <text x="82" y="253" text-anchor="middle" font-size="12" font-weight="bold" fill="#e65100">S3 Dashboard</text>
+  <text x="82" y="269" text-anchor="middle" font-size="10" fill="#bf360c">index.html (public)</text>
+
+  <!-- API Gateway -->
+  <rect x="183" y="200" width="150" height="52" rx="7" fill="#fce4ec" stroke="#c2185b" stroke-width="1.5"/>
+  <text x="258" y="222" text-anchor="middle" font-size="12" font-weight="bold" fill="#880e4f">API Gateway</text>
+  <text x="258" y="238" text-anchor="middle" font-size="10" fill="#ad1457">HTTP API (3 routes)</text>
+
+  <!-- Trigger Lambda -->
+  <rect x="370" y="220" width="130" height="52" rx="7" fill="#ede7f6" stroke="#7b1fa2" stroke-width="1.5"/>
+  <text x="435" y="242" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Trigger Lambda</text>
+  <text x="435" y="258" text-anchor="middle" font-size="10" fill="#6a1b9a">POST /scan</text>
+
+  <!-- Status Lambda -->
+  <rect x="370" y="300" width="130" height="52" rx="7" fill="#ede7f6" stroke="#7b1fa2" stroke-width="1.5"/>
+  <text x="435" y="322" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Status Lambda</text>
+  <text x="435" y="338" text-anchor="middle" font-size="10" fill="#6a1b9a">GET /status/{id}</text>
+
+  <!-- Download Lambda -->
+  <rect x="370" y="380" width="130" height="52" rx="7" fill="#ede7f6" stroke="#7b1fa2" stroke-width="1.5"/>
+  <text x="435" y="402" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Download Lambda</text>
+  <text x="435" y="418" text-anchor="middle" font-size="10" fill="#6a1b9a">GET /download/{id}</text>
+
+  <!-- DynamoDB -->
+  <rect x="745" y="220" width="138" height="52" rx="7" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+  <text x="814" y="242" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">DynamoDB</text>
+  <text x="814" y="258" text-anchor="middle" font-size="10" fill="#1565c0">aegisad-scan-runs</text>
+
+  <!-- SSM -->
+  <rect x="183" y="395" width="150" height="52" rx="7" fill="#eceff1" stroke="#546e7a" stroke-width="1.5"/>
+  <text x="258" y="417" text-anchor="middle" font-size="12" font-weight="bold" fill="#37474f">AWS SSM</text>
+  <text x="258" y="433" text-anchor="middle" font-size="10" fill="#546e7a">Run Command (keyless)</text>
+
+  <!-- Scanner EC2 -->
+  <rect x="545" y="395" width="148" height="52" rx="7" fill="#e8f5e9" stroke="#388e3c" stroke-width="1.5"/>
+  <text x="619" y="417" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Scanner EC2</text>
+  <text x="619" y="433" text-anchor="middle" font-size="10" fill="#2e7d32">bloodhound-python</text>
+
+  <!-- S3 Raw -->
+  <rect x="745" y="390" width="138" height="52" rx="7" fill="#fff8e1" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="814" y="412" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57f17">S3 Raw Bucket</text>
+  <text x="814" y="428" text-anchor="middle" font-size="10" fill="#f9a825">findings.zip (encrypted)</text>
+
+  <!-- Report Lambda -->
+  <rect x="545" y="510" width="148" height="52" rx="7" fill="#ede7f6" stroke="#7b1fa2" stroke-width="1.5"/>
+  <text x="619" y="532" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Report Lambda</text>
+  <text x="619" y="548" text-anchor="middle" font-size="10" fill="#6a1b9a">Score AD + generate PDF</text>
+
+  <!-- S3 Reports -->
+  <rect x="745" y="510" width="138" height="52" rx="7" fill="#fff8e1" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="814" y="532" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57f17">S3 Reports</text>
+  <text x="814" y="548" text-anchor="middle" font-size="10" fill="#f9a825">PDF reports (private)</text>
+
+  <!-- Supporting services -->
+  <rect x="183" y="622" width="185" height="32" rx="6" fill="#eceff1" stroke="#90a4ae" stroke-width="1"/>
+  <text x="275" y="642" text-anchor="middle" font-size="10" fill="#37474f">CloudWatch (logs + alarms)</text>
+  <rect x="378" y="622" width="145" height="32" rx="6" fill="#eceff1" stroke="#90a4ae" stroke-width="1"/>
+  <text x="450" y="642" text-anchor="middle" font-size="10" fill="#37474f">IAM (least privilege)</text>
+  <rect x="533" y="622" width="105" height="32" rx="6" fill="#eceff1" stroke="#90a4ae" stroke-width="1"/>
+  <text x="585" y="642" text-anchor="middle" font-size="10" fill="#37474f">VPC / Subnets</text>
+  <rect x="648" y="622" width="115" height="32" rx="6" fill="#eceff1" stroke="#90a4ae" stroke-width="1"/>
+  <text x="705" y="642" text-anchor="middle" font-size="10" fill="#37474f">Terraform (IaC)</text>
+
+  <!-- ── Arrows ── -->
+
+  <!-- 1 Browser accesses dashboard -->
+  <line x1="82" y1="162" x2="82" y2="228" stroke="#7986cb" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="87" y="200" font-size="9" fill="#7986cb">1 visit</text>
+
+  <!-- 2 Dashboard makes API calls -->
+  <path d="M146,258 C175,258 183,240 183,228" stroke="#7986cb" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+  <text x="158" y="250" font-size="9" fill="#7986cb">2 calls</text>
+
+  <!-- 3 API GW to Trigger -->
+  <line x1="333" y1="220" x2="370" y2="250" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="337" y="237" font-size="9" fill="#546e7a">3</text>
+
+  <!-- 4 API GW to Status -->
+  <line x1="333" y1="226" x2="370" y2="316" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="314" y="278" font-size="9" fill="#546e7a">4</text>
+
+  <!-- 5 API GW to Download -->
+  <line x1="333" y1="234" x2="370" y2="397" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="303" y="330" font-size="9" fill="#546e7a">5</text>
+
+  <!-- 6 Trigger -> DynamoDB PENDING -->
+  <path d="M500,246 Q622,220 745,246" stroke="#1565c0" stroke-width="1.5" fill="none" marker-end="url(#arr-blue)"/>
+  <text x="598" y="218" font-size="9" fill="#1565c0">6 PENDING</text>
+
+  <!-- 7 Trigger -> SSM -->
+  <path d="M435,272 Q435,380 333,410" stroke="#546e7a" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+  <text x="382" y="358" font-size="9" fill="#546e7a">7 send cmd</text>
+
+  <!-- 8 SSM -> Scanner EC2 -->
+  <line x1="333" y1="421" x2="545" y2="421" stroke="#2e7d32" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="398" y="415" font-size="9" fill="#2e7d32">8 run script</text>
+
+  <!-- 9 Scanner EC2 -> DynamoDB RUNNING -->
+  <path d="M693,400 Q720,320 745,268" stroke="#1565c0" stroke-width="1.5" fill="none" marker-end="url(#arr-blue)"/>
+  <text x="718" y="330" font-size="9" fill="#1565c0">9 RUNNING</text>
+
+  <!-- 10 Scanner EC2 -> S3 Raw -->
+  <line x1="693" y1="421" x2="745" y2="421" stroke="#e65100" stroke-width="1.5" marker-end="url(#arr-orange)"/>
+  <text x="706" y="414" font-size="9" fill="#e65100">10 upload</text>
+
+  <!-- 11 S3 Raw -> Report Lambda (S3 event, dashed) -->
+  <path d="M814,442 Q814,488 693,510" stroke="#7b1fa2" stroke-width="1.5" fill="none" stroke-dasharray="5,2" marker-end="url(#arr-purple)"/>
+  <text x="760" y="490" font-size="9" fill="#7b1fa2">11 S3 event</text>
+
+  <!-- 12 Report Lambda -> DynamoDB COMPLETED -->
+  <path d="M545,524 Q480,440 480,300 Q480,268 745,268" stroke="#1565c0" stroke-width="1.5" fill="none" marker-end="url(#arr-blue)"/>
+  <text x="467" y="390" font-size="9" fill="#1565c0">12 COMPLETED</text>
+
+  <!-- 13 Report Lambda -> S3 Reports -->
+  <line x1="693" y1="536" x2="745" y2="536" stroke="#e65100" stroke-width="1.5" marker-end="url(#arr-orange)"/>
+  <text x="703" y="528" font-size="9" fill="#e65100">13 PDF</text>
+
+  <!-- 14 Status Lambda -> DynamoDB read (dashed) -->
+  <path d="M500,326 Q622,310 745,256" stroke="#1565c0" stroke-width="1" fill="none" stroke-dasharray="3,2" marker-end="url(#arr-blue)"/>
+  <text x="595" y="305" font-size="9" fill="#1565c0">14 read (3s poll)</text>
+
+  <!-- 15 Download Lambda -> S3 Reports -->
+  <path d="M500,406 Q680,406 745,524" stroke="#e65100" stroke-width="1.5" fill="none" marker-end="url(#arr-orange)"/>
+  <text x="630" y="450" font-size="9" fill="#e65100">15 presigned URL</text>
+
+  <!-- ── Legend ── -->
+  <rect x="896" y="130" width="187" height="150" rx="8" fill="white" stroke="#cfd8dc" stroke-width="1"/>
+  <text x="989" y="149" text-anchor="middle" font-size="11" font-weight="bold" fill="#37474f">Arrow Key</text>
+  <line x1="910" y1="164" x2="940" y2="164" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="947" y="168" font-size="10" fill="#37474f">API / command</text>
+  <line x1="910" y1="184" x2="940" y2="184" stroke="#1565c0" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+  <text x="947" y="188" font-size="10" fill="#37474f">DynamoDB write</text>
+  <line x1="910" y1="204" x2="940" y2="204" stroke="#2e7d32" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="947" y="208" font-size="10" fill="#37474f">Run script</text>
+  <line x1="910" y1="224" x2="940" y2="224" stroke="#e65100" stroke-width="1.5" marker-end="url(#arr-orange)"/>
+  <text x="947" y="228" font-size="10" fill="#37474f">S3 data / URL</text>
+  <line x1="910" y1="244" x2="940" y2="244" stroke="#7b1fa2" stroke-width="1.5" stroke-dasharray="5,2" marker-end="url(#arr-purple)"/>
+  <text x="947" y="248" font-size="10" fill="#37474f">Event trigger</text>
+  <line x1="910" y1="264" x2="940" y2="264" stroke="#1565c0" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr-blue)"/>
+  <text x="947" y="268" font-size="10" fill="#37474f">Poll (3s interval)</text>
+</svg>
