@@ -237,6 +237,45 @@ resource "aws_iam_role_policy" "scanner_ec2" {
   })
 }
 
+# ─────────────────────────────────────────
+# CONFIGURE LAMBDA ROLE
+# Needs SSM send-command to update credentials.env
+# ─────────────────────────────────────────
+
+resource "aws_iam_role" "configure_lambda" {
+  name = "${var.project_name}-configure-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "configure_lambda" {
+  name = "${var.project_name}-configure-lambda-policy"
+  role = aws_iam_role.configure_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["ssm:SendCommand"]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # EC2 needs an "instance profile" to wear an IAM role
 # Think of it as the physical badge holder
 resource "aws_iam_instance_profile" "scanner" {

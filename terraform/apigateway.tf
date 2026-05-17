@@ -108,6 +108,19 @@ resource "aws_lambda_permission" "status" {
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
 
+resource "aws_apigatewayv2_integration" "configure" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.configure.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "configure" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /configure"
+  target    = "integrations/${aws_apigatewayv2_integration.configure.id}"
+}
+
 resource "aws_lambda_permission" "download" {
   statement_id  = "AllowAPIGatewayDownload"
   action        = "lambda:InvokeFunction"

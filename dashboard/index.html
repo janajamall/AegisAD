@@ -275,6 +275,33 @@
     attack paths, and privilege escalation opportunities.
   </p>
 
+  <!-- ── Config card ── -->
+  <div class="card">
+    <div class="card-title">Target Configuration</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:6px;">DC IP Address</label>
+        <input id="cfgDcIp" type="text" placeholder="10.0.1.179"
+          style="width:100%;background:#0f1117;border:1px solid #2d3148;border-radius:6px;padding:10px;color:#e2e8f0;font-size:13px;"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:6px;">AD Username</label>
+        <input id="cfgUser" type="text" placeholder="jon.snow"
+          style="width:100%;background:#0f1117;border:1px solid #2d3148;border-radius:6px;padding:10px;color:#e2e8f0;font-size:13px;"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:6px;">AD Password</label>
+        <input id="cfgPass" type="password" placeholder="••••••••"
+          style="width:100%;background:#0f1117;border:1px solid #2d3148;border-radius:6px;padding:10px;color:#e2e8f0;font-size:13px;"/>
+      </div>
+    </div>
+    <button onclick="saveConfig()"
+      style="background:#2d3148;color:#e2e8f0;border:1px solid #3d4168;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+      Save Configuration
+    </button>
+    <span id="cfgStatus" style="margin-left:12px;font-size:12px;color:#64748b;"></span>
+  </div>
+
   <!-- ── Scan card ── -->
   <div class="card">
     <div class="card-title">New Scan</div>
@@ -542,6 +569,42 @@
   async function redownload(runId) {
     currentRunId = runId;
     await downloadReport();
+  }
+
+  // ── Save config ──────────────────────────────────────────
+  async function saveConfig() {
+    const dc_ip       = document.getElementById('cfgDcIp').value.trim();
+    const ad_username = document.getElementById('cfgUser').value.trim();
+    const ad_password = document.getElementById('cfgPass').value.trim();
+    const status      = document.getElementById('cfgStatus');
+
+    if (!dc_ip || !ad_username || !ad_password) {
+      status.style.color = '#ef4444';
+      status.textContent = 'All fields are required.';
+      return;
+    }
+
+    status.style.color = '#64748b';
+    status.textContent = 'Saving...';
+
+    try {
+      const response = await fetch(`${API_URL}/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dc_ip, ad_username, ad_password })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        status.style.color = '#22c55e';
+        status.textContent = 'Saved — scanner is configured.';
+      } else {
+        status.style.color = '#ef4444';
+        status.textContent = data.error || 'Failed to save.';
+      }
+    } catch (err) {
+      status.style.color = '#ef4444';
+      status.textContent = `Error: ${err.message}`;
+    }
   }
 
   // ── Init ─────────────────────────────────────────────────

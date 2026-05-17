@@ -147,6 +147,45 @@ resource "aws_lambda_permission" "allow_s3_report" {
   source_arn    = aws_s3_bucket.raw.arn
 }
 
+# ─────────────────────────────────────────
+# CONFIGURE LAMBDA
+# Updates credentials.env on the scanner EC2
+# via SSM when user submits DC IP + creds
+# ─────────────────────────────────────────
+
+data "archive_file" "configure" {
+  type        = "zip"
+  source_file = "${path.module}/../lambdas/configure/handler.py"
+  output_path = "${path.module}/../lambdas/configure/configure.zip"
+}
+
+resource "aws_lambda_function" "configure" {
+  function_name    = "${var.project_name}-configure"
+  role             = aws_iam_role.configure_lambda.arn
+  handler          = "handler.lambda_handler"
+  runtime          = "python3.12"
+  filename         = data.archive_file.configure.output_path
+  source_code_hash = data.archive_file.configure.output_base64sha256
+  timeout          = 30
+  memory_size      = 128
+
+  environment {
+    variables = {
+      SCANNER_INSTANCE_ID = aws_instance.scanner.id
+    }
+  }
+
+  tags = { Name = "${var.project_name}-configure" }
+}
+
+resource "aws_lambda_permission" "configure" {
+  statement_id  = "AllowAPIGatewayConfigure"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.configure.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
 resource "aws_s3_bucket_notification" "raw_findings" {
   bucket = aws_s3_bucket.raw.id
 

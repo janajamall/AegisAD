@@ -77,27 +77,39 @@ def run_bloodhound(run_id):
 
     log(f"Running bloodhound-python against {DC_DOMAIN} at {DC_IP}")
 
+    # Ensure DC hostname resolves — bloodhound-python requires FQDN for -dc
+    dc_hostname = f"dc01.{DC_DOMAIN}"
+    hosts_entry = f"{DC_IP} {dc_hostname} dc01\n"
+    with open("/etc/hosts", "r") as f:
+        hosts = f.read()
+    if dc_hostname not in hosts:
+        with open("/etc/hosts", "a") as f:
+            f.write(hosts_entry)
+        log(f"Added {dc_hostname} → {DC_IP} to /etc/hosts")
+
     # Build the bloodhound-python command
+    # Note: --outputdir is not supported; cd into the dir instead
     cmd = [
         "python3", "-m", "bloodhound",
         "-u", AD_USERNAME,
         "-p", AD_PASSWORD,
         "-d", DC_DOMAIN,
-        "-dc", f"dc01.{DC_DOMAIN}",
+        "-dc", dc_hostname,
         "-ns", DC_IP,
+        "--auth-method", "ntlm",
         "-c", "All",
         "--zip",
-        "--outputdir", output_dir
     ]
 
     log(f"Command: bloodhound-python -u {AD_USERNAME} -d {DC_DOMAIN} -c All")
 
-    # Run the command
+    # Run the command with cwd so output lands in output_dir
     result = subprocess.run(
         cmd,
         capture_output=True,
         text=True,
-        timeout=600  # 10 minute timeout
+        timeout=600,  # 10 minute timeout
+        cwd=output_dir
     )
 
     # Log all output — shows up in CloudWatch
