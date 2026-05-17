@@ -1,0 +1,84 @@
+---
+- name: Add intentional AD vulnerabilities
+  hosts: domain_controllers
+  gather_facts: false
+
+  tasks:
+    - name: Inject misconfigurations
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module ActiveDirectory
+
+          # 1. Kerberoastable: set SPN on regular user accounts
+          $kerb_users = @("sansa.stark", "robb.stark")
+          foreach ($u in $kerb_users) {
+            $spn = "HTTP/web-" + $u.Replace(".", "") + ".north.sevenkingdoms.local"
+            Set-ADUser -Identity $u -ServicePrincipalNames @{Add=$spn} -ErrorAction SilentlyContinue
+          }
+
+          # 2. Password stored in description field
+          Set-ADUser -Identity "arya.stark"      -Description "temp password: NoOne@2024!" -ErrorAction SilentlyContinue
+          Set-ADUser -Identity "sansa.stark"     -Description "Default pwd is Summer@2024! - rotate quarterly" -ErrorAction SilentlyContinue
+          Set-ADUser -Identity "petyr.baelish"   -Description "secret = Mockingbird1" -ErrorAction SilentlyContinue
+          Set-ADUser -Identity "tyrion.lannister" -Description "pwd: WineLover123" -ErrorAction SilentlyContinue
+
+          # 3. AS-REP roastable: disable Kerberos pre-authentication
+          Set-ADAccountControl -Identity "robb.stark"        -DoesNotRequirePreAuth $true -ErrorAction SilentlyContinue
+          Set-ADAccountControl -Identity "joffrey.baratheon" -DoesNotRequirePreAuth $true -ErrorAction SilentlyContinue
+
+          # 4. Excessive Domain Admin members
+          Add-ADGroupMember -Identity "Domain Admins" -Members "sansa.stark","arya.stark","robb.stark","cersei.lannister","jaime.lannister" -ErrorAction SilentlyContinue
+
+          # 5. PasswordNotRequired flag (account can have an empty password)
+          Set-ADAccountControl -Identity "hodor"  -PasswordNotRequired $true -ErrorAction SilentlyContinue
+          Set-ADAccountControl -Identity "varys"  -PasswordNotRequired $true -ErrorAction SilentlyContinue
+
+          # 6. Reversible password encryption per-user (UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)
+          Set-ADUser -Identity "petyr.baelish" -AllowReversiblePasswordEncryption $true -ErrorAction SilentlyContinue
+
+          # 7. AdminCount ghost: user is marked as protected but isn't in any admin group
+          # (left over from when they used to be admin — SDHolder doesn't clean it up)
+          Set-ADUser -Identity "samwell.tarly" -Replace @{adminCount=1} -ErrorAction SilentlyContinue
+
+          # 8. Constrained delegation set on a user account
+          Set-ADUser -Identity "tywin.lannister" -Add @{"msDS-AllowedToDelegateTo"="HOST/srv01.north.sevenkingdoms.local"} -ErrorAction SilentlyContinue
+
+          # 9. Service account with weak settings (the original svc_sql)
+          $weak_pass = ConvertTo-SecureString "Password1" -AsPlainText -Force
+          if (-not (Get-ADUser -Filter {SamAccountName -eq "svc_sql"} -ErrorAction SilentlyContinue)) {
+            New-ADUser -SamAccountName "svc_sql" -Name "SQL Service" `
+              -GivenName "SQL" -Surname "Service" `
+              -AccountPassword $weak_pass `
+              -Enabled $true -PasswordNeverExpires $true `
+              -ServicePrincipalNames @("MSSQLSvc/sql01.north.sevenkingdoms.local:1433") `
+              -Description "service account, password: Password1" `
+              -Path "CN=Users,DC=north,DC=sevenkingdoms,DC=local"
+          }
+
+          # 10. Domain password policy weakened: reversible encryption + zero lockout
+          # pwdproperties bit 16 = reversible encryption stored
+          $domain = Get-ADDomain
+          $rootDSE = [ADSI]"LDAP://$($domain.PDCEmulator)/$($domain.DistinguishedName)"
+          $current = $rootDSE.pwdProperties.Value
+          if ($current -isnot [int]) { $current = 0 }
+          $rootDSE.Put("pwdProperties", ($current -bor 16))
+          $rootDSE.SetInfo()
+
+          # Also push the lockout threshold to 0 just in case
+          Set-ADDefaultDomainPasswordPolicy -Identity (Get-ADDomain).DNSRoot `
+            -LockoutThreshold 0 -ErrorAction SilentlyContinue
+
+          Write-Output "Vulnerabilities injected"
+
+- name: Configure unconstrained delegation on SRV01
+  hosts: member_servers
+  gather_facts: false
+
+  tasks:
+    - name: Enable unconstrained delegation flag on SRV01
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module ActiveDirectory
+          Set-ADComputer -Identity "SRV01" -TrustedForDelegation $true
+          Write-Output "Unconstrained delegation enabled on SRV01"
+      delegate_to: dc01

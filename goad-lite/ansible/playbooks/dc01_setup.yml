@@ -1,0 +1,89 @@
+---
+- name: Configure Domain Controller
+  hosts: domain_controllers
+  gather_facts: false
+
+  vars:
+    domain_name: "north.sevenkingdoms.local"
+    domain_netbios: "NORTH"
+    safe_mode_password: "P@ssw0rd123!"
+
+  tasks:
+    - name: Set hostname to DC01
+      ansible.windows.win_hostname:
+        name: DC01
+      register: hostname_result
+
+    - name: Reboot if hostname changed
+      ansible.windows.win_reboot:
+        reboot_timeout: 120
+      when: hostname_result.reboot_required
+
+    - name: Install AD Domain Services and DNS features
+      ansible.windows.win_feature:
+        name:
+          - AD-Domain-Services
+          - DNS
+          - RSAT-AD-Tools
+          - RSAT-AD-PowerShell
+          - RSAT-DNS-Server
+        state: present
+        include_management_tools: true
+
+    - name: Promote to Domain Controller (new forest)
+      ansible.windows.win_powershell:
+        script: |
+          $safePass = ConvertTo-SecureString "{{ safe_mode_password }}" -AsPlainText -Force
+          $result = Install-ADDSForest `
+            -DomainName "{{ domain_name }}" `
+            -DomainNetbiosName "{{ domain_netbios }}" `
+            -SafeModeAdministratorPassword $safePass `
+            -InstallDns `
+            -Force `
+            -NoRebootOnCompletion
+          exit 0
+      register: domain_result
+      failed_when: false
+
+    - name: Reboot after domain promotion
+      ansible.windows.win_reboot:
+        reboot_timeout: 300
+        post_reboot_delay: 60
+
+    - name: Wait for ADWS service to start
+      ansible.windows.win_service:
+        name: ADWS
+        state: started
+      retries: 10
+      delay: 15
+
+    - name: Create test AD users and configure group membership
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module ActiveDirectory
+          $users = @(
+            @{ Sam="jon.snow";   First="Jon";   Last="Snow";   Pass="Winter@2024!" },
+            @{ Sam="sansa.stark"; First="Sansa"; Last="Stark";  Pass="Summer@2024!" },
+            @{ Sam="arya.stark";  First="Arya";  Last="Stark";  Pass="NoOne@2024!" },
+            @{ Sam="robb.stark";  First="Robb";  Last="Stark";  Pass="KingN0rth@2024!" }
+          )
+          foreach ($u in $users) {
+            $sec = ConvertTo-SecureString $u.Pass -AsPlainText -Force
+            if (-not (Get-ADUser -Filter {SamAccountName -eq $u.Sam} -ErrorAction SilentlyContinue)) {
+              New-ADUser -SamAccountName $u.Sam -GivenName $u.First -Surname $u.Last `
+                -Name "$($u.First) $($u.Last)" -AccountPassword $sec `
+                -Enabled $true -PasswordNeverExpires $true `
+                -Path "CN=Users,DC=north,DC=sevenkingdoms,DC=local"
+            }
+          }
+          Add-ADGroupMember -Identity "Domain Admins" -Members "jon.snow" -ErrorAction SilentlyContinue
+
+    - name: Allow WinRM through firewall
+      community.windows.win_firewall_rule:
+        name: WinRM HTTP
+        localport: 5985
+        action: allow
+        direction: in
+        protocol: tcp
+        state: present
+        enabled: true

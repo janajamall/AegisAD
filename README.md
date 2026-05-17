@@ -40,10 +40,10 @@ API Gateway  ──►  Trigger Lambda  ──►  SSM Run Command
 | Service | Role |
 |---|---|
 | API Gateway (HTTP) | Exposes `/scan`, `/status/{id}`, `/download/{id}` |
-| Lambda (×4) | Trigger, Report, Status, Download — all serverless |
+| Lambda (×4) | Trigger, Report, Status, Download (all serverless) |
 | EC2 (Ubuntu) | Runs bloodhound-python scanner |
 | S3 (×3) | Raw findings, PDF reports, dashboard hosting |
-| DynamoDB | Tracks scan state: PENDING → RUNNING → PROCESSING → COMPLETED |
+| DynamoDB | Tracks scan state: PENDING > RUNNING > PROCESSING > COMPLETED |
 | SSM | Sends scan commands to EC2 without SSH keys |
 | CloudWatch | Logs, metrics dashboard, error alarms |
 | IAM | Least-privilege roles for every Lambda and EC2 |
@@ -55,7 +55,7 @@ API Gateway  ──►  Trigger Lambda  ──►  SSM Run Command
 
 ```
 AegisAD/
-├── terraform/              # Infrastructure as Code — deploys all AWS resources
+├── terraform/              # Infrastructure as Code; deploys all AWS resources
 │   ├── provider.tf
 │   ├── vpc.tf
 │   ├── ec2.tf
@@ -137,7 +137,7 @@ aws ssm send-command \
 
 ### 4. Update dashboard and upload
 
-Edit `dashboard/index.html` line ~322 — replace `API_URL` with the value from `terraform output api_url`.
+Edit `dashboard/index.html` line ~322 and replace `API_URL` with the value from `terraform output api_url`.
 
 ```bash
 aws s3 cp dashboard/index.html s3://REPLACE_dashboard_bucket_name/index.html \
@@ -173,24 +173,32 @@ Navigate to the URL from `terraform output dashboard_url`. Click **Start Scan**.
 5. S3 upload event automatically triggers the Report Lambda
 6. Report Lambda parses the BloodHound JSON, scores the AD environment, generates a PDF, stores it in S3, updates DynamoDB to `COMPLETED`
 7. Dashboard polls the Status Lambda every 3 seconds and shows progress
-8. User clicks **Download Report** — the Download Lambda returns a presigned S3 URL and the PDF opens in the browser
+8. User clicks **Download Report**. The Download Lambda returns a presigned S3 URL and the PDF opens in the browser
 
 ---
 
 ## Security design
 
-- **IAM least privilege**: every Lambda and the scanner EC2 have narrowly scoped roles — no role has more access than needed for its specific function
-- **No SSH keys**: the scanner EC2 is accessed only via AWS Systems Manager — no open port 22 in production
+- **IAM least privilege**: every Lambda and the scanner EC2 have narrowly scoped roles. No role has more access than needed for its specific function
+- **No SSH keys**: the scanner EC2 is accessed only via AWS Systems Manager. No open port 22 in production
 - **Encryption at rest**: S3 buckets use AES-256 SSE; DynamoDB uses AWS-managed encryption
 - **Private findings**: the raw findings bucket and reports bucket block all public access; users get PDFs through time-limited presigned URLs only
 - **Security groups**: scanner EC2 can only receive SSH from a configured admin IP; Windows AD VMs only accept traffic from the scanner security group
 
 ---
 
+## Testing lab
+
+A minimal Active Directory testing environment lives in [`goad-lite/`](./goad-lite/).
+
+**It is not a full implementation of [GOAD](https://github.com/Orange-Cyberdefense/GOAD).** It's a two-VM AWS lab (DC01 + SRV01) with intentional misconfigurations planted via Ansible so the AegisAD scanner has something realistic to detect during development. See [`goad-lite/README.md`](./goad-lite/README.md) for what is and isn't implemented.
+
+---
+
 ## Team
 
-- Leen Almousa — Cloud architecture, Lambda functions, dashboard, IaC
-- Jana Falah — Active Directory lab integration, security analysis, BloodHound integration
+- Leen Almousa, Cloud architecture, Lambda functions, dashboard, IaC
+- Jana Falah, Active Directory lab integration, security analysis, BloodHound integration
 
 ---
 

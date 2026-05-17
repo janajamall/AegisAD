@@ -1,0 +1,4 @@
+---
+# Master playbook: configure full GOAD Lite AD environment
+- import_playbook: dc01_setup.yml
+- import_playbook: srv01_join.yml

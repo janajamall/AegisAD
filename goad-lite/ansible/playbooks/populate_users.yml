@@ -1,0 +1,77 @@
+---
+- name: Populate AD with the full Game of Thrones user roster
+  hosts: domain_controllers
+  gather_facts: false
+
+  tasks:
+    - name: Create the GOAD user roster
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module ActiveDirectory
+          $defaultPass = ConvertTo-SecureString "Westeros@2024!" -AsPlainText -Force
+
+          $users = @(
+            # House Baratheon
+            @{Sam="robert.baratheon"; First="Robert"; Last="Baratheon"; Desc="King of the Seven Kingdoms"},
+            @{Sam="joffrey.baratheon"; First="Joffrey"; Last="Baratheon"; Desc=""},
+            @{Sam="stannis.baratheon"; First="Stannis"; Last="Baratheon"; Desc=""},
+            @{Sam="renly.baratheon"; First="Renly"; Last="Baratheon"; Desc=""},
+
+            # House Lannister
+            @{Sam="cersei.lannister"; First="Cersei"; Last="Lannister"; Desc="Queen"},
+            @{Sam="jaime.lannister"; First="Jaime"; Last="Lannister"; Desc="Kingsguard"},
+            @{Sam="tyrion.lannister"; First="Tyrion"; Last="Lannister"; Desc="Hand of the King"},
+            @{Sam="tywin.lannister"; First="Tywin"; Last="Lannister"; Desc=""},
+
+            # House Stark (already have jon/sansa/arya/robb)
+            @{Sam="eddard.stark"; First="Eddard"; Last="Stark"; Desc="Warden of the North"},
+            @{Sam="catelyn.stark"; First="Catelyn"; Last="Stark"; Desc=""},
+            @{Sam="bran.stark"; First="Bran"; Last="Stark"; Desc=""},
+            @{Sam="rickon.stark"; First="Rickon"; Last="Stark"; Desc=""},
+
+            # House Targaryen
+            @{Sam="daenerys.targaryen"; First="Daenerys"; Last="Targaryen"; Desc="Mother of Dragons"},
+            @{Sam="viserys.targaryen"; First="Viserys"; Last="Targaryen"; Desc=""},
+
+            # Night's Watch & Others
+            @{Sam="samwell.tarly"; First="Samwell"; Last="Tarly"; Desc=""},
+            @{Sam="jeor.mormont"; First="Jeor"; Last="Mormont"; Desc="Lord Commander"},
+            @{Sam="hodor"; First="Hodor"; Last="Hodor"; Desc="hodor"},
+            @{Sam="jaqen.hghar"; First="Jaqen"; Last="H'ghar"; Desc=""},
+            @{Sam="petyr.baelish"; First="Petyr"; Last="Baelish"; Desc="Master of Coin"},
+            @{Sam="varys"; First="Varys"; Last="Spider"; Desc="Master of Whisperers"}
+          )
+
+          foreach ($u in $users) {
+            if (-not (Get-ADUser -Filter {SamAccountName -eq $u.Sam} -ErrorAction SilentlyContinue)) {
+              New-ADUser -SamAccountName $u.Sam `
+                -GivenName $u.First -Surname $u.Last `
+                -Name ("$($u.First) $($u.Last)") `
+                -AccountPassword $defaultPass `
+                -Enabled $true -PasswordNeverExpires $true `
+                -Description $u.Desc `
+                -Path "CN=Users,DC=north,DC=sevenkingdoms,DC=local"
+            }
+          }
+
+          # Houses as groups
+          $groups = @("House Stark", "House Lannister", "House Baratheon", "House Targaryen", "Small Council", "Kingsguard", "Night's Watch")
+          foreach ($g in $groups) {
+            if (-not (Get-ADGroup -Filter {Name -eq $g} -ErrorAction SilentlyContinue)) {
+              New-ADGroup -Name $g -GroupScope Global -GroupCategory Security `
+                -Path "CN=Users,DC=north,DC=sevenkingdoms,DC=local"
+            }
+          }
+
+          # Group memberships
+          Add-ADGroupMember -Identity "House Stark"      -Members "eddard.stark","catelyn.stark","jon.snow","sansa.stark","arya.stark","robb.stark","bran.stark","rickon.stark" -ErrorAction SilentlyContinue
+          Add-ADGroupMember -Identity "House Lannister"  -Members "tywin.lannister","cersei.lannister","jaime.lannister","tyrion.lannister" -ErrorAction SilentlyContinue
+          Add-ADGroupMember -Identity "House Baratheon"  -Members "robert.baratheon","stannis.baratheon","renly.baratheon","joffrey.baratheon" -ErrorAction SilentlyContinue
+          Add-ADGroupMember -Identity "House Targaryen"  -Members "daenerys.targaryen","viserys.targaryen" -ErrorAction SilentlyContinue
+          Add-ADGroupMember -Identity "Small Council"    -Members "tyrion.lannister","petyr.baelish","varys","cersei.lannister" -ErrorAction SilentlyContinue
+          Add-ADGroupMember -Identity "Kingsguard"       -Members "jaime.lannister" -ErrorAction SilentlyContinue
+          Add-ADGroupMember -Identity "Night's Watch"    -Members "jon.snow","samwell.tarly","jeor.mormont" -ErrorAction SilentlyContinue
+
+          # Some stale accounts (created but never logged in is automatic;
+          # we just have a lot of them now)
+          Write-Output ("Roster created: " + (Get-ADUser -Filter * | Measure-Object).Count + " users total")

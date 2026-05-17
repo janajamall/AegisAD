@@ -1,0 +1,19 @@
+# Copy this file to terraform.tfvars and fill in the values.
+# DO NOT commit terraform.tfvars — it contains your IP and key name.
+
+aws_region    = "us-east-1"
+environment   = "dev"
+
+# From: cd ../../../AegisAD-main/AegisAD-main/terraform && terraform output
+aegisad_vpc_id        = "vpc-XXXXXXXXXXXXXXXXX"
+aegisad_subnet_id     = "subnet-XXXXXXXXXXXXXXXXX"
+aegisad_scanner_sg_id = "sg-XXXXXXXXXXXXXXXXX"
+
+# Your public IP — find it at: curl ifconfig.me
+allowed_admin_ip = "YOUR_IP/32"
+
+# An existing EC2 key pair in your AWS account
+key_pair_name = "your-key-pair-name"
+
+dc_domain  = "north.sevenkingdoms.local"
+dc_netbios = "NORTH"

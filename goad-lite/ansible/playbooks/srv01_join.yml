@@ -1,0 +1,56 @@
+---
+- name: Join SRV01 to Domain
+  hosts: member_servers
+  gather_facts: false
+
+  vars:
+    domain_name: "north.sevenkingdoms.local"
+    domain_admin_user: "NORTH\\Administrator"
+    domain_admin_password: "@)uMYwVX-ERC3NMBnq8PXPk@uESIR-Xo"
+    dc01_ip: "10.0.1.179"
+
+  tasks:
+    - name: Set hostname to SRV01
+      ansible.windows.win_hostname:
+        name: SRV01
+      register: hostname_result
+
+    - name: Reboot if hostname changed
+      ansible.windows.win_reboot:
+        reboot_timeout: 120
+      when: hostname_result.reboot_required
+
+    - name: Set DNS to point at DC01
+      ansible.windows.win_dns_client:
+        adapter_names: "*"
+        dns_servers:
+          - "{{ dc01_ip }}"
+
+    - name: Join the domain
+      ansible.windows.win_powershell:
+        script: |
+          $pass = ConvertTo-SecureString "{{ domain_admin_password }}" -AsPlainText -Force
+          $cred = New-Object System.Management.Automation.PSCredential("{{ domain_admin_user }}", $pass)
+          $current = (Get-WmiObject Win32_ComputerSystem).Domain
+          if ($current -ne "{{ domain_name }}") {
+            Add-Computer -DomainName "{{ domain_name }}" -Credential $cred -Force
+            $Ansible.Result = "joined"
+          } else {
+            $Ansible.Result = "already_joined"
+          }
+      register: join_result
+
+    - name: Reboot after domain join
+      ansible.windows.win_reboot:
+        reboot_timeout: 300
+        post_reboot_delay: 30
+      when: join_result.result == "joined"
+
+    - name: Allow WinRM through firewall
+      ansible.windows.win_powershell:
+        script: |
+          $rule = Get-NetFirewallRule -Name "WinRM HTTP" -ErrorAction SilentlyContinue
+          if (-not $rule) {
+            New-NetFirewallRule -Name "WinRM HTTP" -DisplayName "WinRM HTTP" `
+              -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow
+          }

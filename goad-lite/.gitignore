@@ -1,0 +1,15 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
+terraform.tfvars
+
+# Ansible inventory contains live Administrator passwords
+ansible/inventory.yml
+ansible/*.retry
+
+# OS
+.DS_Store
+Thumbs.db
